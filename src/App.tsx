@@ -5,15 +5,18 @@ import { User } from './types';
 type State = {
   searchQuery: string;
   currentUser: User | null;
+  userList: User[];
 };
 
 type Action =
   | { type: 'SET_QUERY'; payload: string }
-  | { type: 'SET_USER'; payload: User | null };
+  | { type: 'SET_USER'; payload: User | null }
+  | { type: "SET_USER_LIST"; payload: User[] };
 
 const initialState: State = {
   searchQuery: '',
   currentUser: null,
+  userList: []
 };
 
 function reducer(state: State, action: Action) {
@@ -22,6 +25,8 @@ function reducer(state: State, action: Action) {
       return { ...state, searchQuery: action.payload };
     case 'SET_USER':
       return { ...state, currentUser: action.payload };
+    case "SET_USER_LIST":
+      return { ...state, userList: action.payload };
     default:
       return state;
   }
@@ -29,7 +34,16 @@ function reducer(state: State, action: Action) {
 
 const App = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { searchQuery, currentUser } = state;
+  const { searchQuery, currentUser, userList } = state;
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const response = await fetch("https://jsonplaceholder.typicode.com/users");
+      const data = await response.json();
+      dispatch({ type: "SET_USER_LIST", payload: data });
+    };
+    fetchUsers();
+  }, []);
 
   useEffect(() => {
     if (!searchQuery) {
@@ -58,14 +72,24 @@ const App = () => {
   return (
     <div className="card">
       <input type="search" value={searchQuery} onChange={handleChange} />
-      {currentUser ? (
-        <div>
-          <h3>{currentUser.name}</h3>
-          <h3>{currentUser.username}</h3>
-          <h3>{currentUser.email}</h3>
-        </div>
+      {searchQuery ? (
+        currentUser ? (
+          <div>
+            <h3>{currentUser.name}</h3>
+            <h3>{currentUser.username}</h3>
+            <h3>{currentUser.email}</h3>
+          </div>
+        ) : (
+          <p>No user found</p>
+        )
       ) : (
-        <p>No user found</p>
+        <ul className="user-list">
+          {userList.map((user) => (
+            <li key={user.id}>
+              {user.name} ({user.username})
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
